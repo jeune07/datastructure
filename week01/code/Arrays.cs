@@ -12,8 +12,27 @@ public static class Arrays
         // Remember: Using comments in your program, write down your process for solving this problem
         // step by step before you write the code. The plan should be clear enough that it could
         // be implemented by another person.
+        //define a aux variable to track the multiple of started point.
+    
+        //declare an array of doubles with the specified length
+        // 1. Input validation
+    if (number == 0)
+        throw new ArgumentException("parameter 'number' must be positive", nameof(number));
 
-        return []; // replace this return statement with your own
+    if (length <= 0)
+        throw new ArgumentException("parameter 'length' must be positive", nameof(length));
+
+    // 2. Allocate result array
+    double[] multiples = new double[length];
+
+    // 3. Populate with multiples in a single pass
+    for (int k = 1; k <= length; k++)
+    {
+        multiples[k - 1] = number * k;
+    }
+
+    // 4. Return the completed array
+    return multiples;
     }
 
     /// <summary>
@@ -25,9 +44,28 @@ public static class Arrays
     /// </summary>
     public static void RotateListRight(List<int> data, int amount)
     {
-        // TODO Problem 2 Start
-        // Remember: Using comments in your program, write down your process for solving this problem
-        // step by step before you write the code. The plan should be clear enough that it could
-        // be implemented by another person.
+        if (data == null)
+        throw new ArgumentNullException(nameof(data));
+        
+        if (amount < 1 || amount > data.Count)
+        throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be between 1 and data.Count inclusive.");
+
+    // Step 2: Determine the two parts of the list
+    // Part 1: Last 'amount' elements to rotate to the front
+    List<int> lastPart = data.GetRange(data.Count - amount, amount);
+
+    // Part 2: The remaining elements from the start up to data.Count - amount
+    List<int> firstPart = data.GetRange(0, data.Count - amount);
+
+    // Step 3: Combine the two parts
+    List<int> rotatedList = new List<int>();
+    rotatedList.AddRange(lastPart);
+    rotatedList.AddRange(firstPart);
+
+    // Step 4: Copy rotated values back into the original list
+    for (int i = 0; i < data.Count; i++)
+    {
+        data[i] = rotatedList[i];
+    }
     }
 }
