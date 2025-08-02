@@ -1,65 +1,158 @@
-/// <summary>
-/// Defines a maze using a dictionary. The dictionary is provided by the
-/// user when the Maze object is created. The dictionary will contain the
-/// following mapping:
-///
-/// (x,y) : [left, right, up, down]
-///
-/// 'x' and 'y' are integers and represents locations in the maze.
-/// 'left', 'right', 'up', and 'down' are boolean are represent valid directions
-///
-/// If a direction is false, then we can assume there is a wall in that direction.
-/// If a direction is true, then we can proceed.  
-///
-/// If there is a wall, then throw an InvalidOperationException with the message "Can't go that way!".  If there is no wall,
-/// then the 'currX' and 'currY' values should be changed.
-/// </summary>
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+
+public static class SetsAndMaps
+{
+    public static string[] FindPairs(string[] words)
+    {
+        var result = new List<string>();
+        var wordSet = new HashSet<string>(words);
+
+        foreach (var word in words)
+        {
+            if (word.Length != 2 || word[0] == word[1]) continue;
+
+            var reversed = new string(new[] { word[1], word[0] });
+            if (wordSet.Contains(reversed))
+            {
+                result.Add($"{word} & {reversed}");
+                wordSet.Remove(word);
+                wordSet.Remove(reversed);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    public static Dictionary<string, int> SummarizeDegrees(string filename)
+    {
+        var degrees = new Dictionary<string, int>();
+
+        foreach (var line in File.ReadLines(filename))
+        {
+            var fields = line.Split(',');
+            if (fields.Length >= 4)
+            {
+                var degree = fields[3].Trim();
+                if (!string.IsNullOrWhiteSpace(degree))
+                {
+                    if (!degrees.TryAdd(degree, 1))
+                        degrees[degree]++;
+                }
+            }
+        }
+
+        return degrees;
+    }
+
+    public static bool IsAnagram(string word1, string word2)
+    {
+        var dict = new Dictionary<char, int>();
+
+        foreach (char c in word1.ToLower().Where(c => c != ' '))
+        {
+            if (!dict.ContainsKey(c)) dict[c] = 0;
+            dict[c]++;
+        }
+
+        foreach (char c in word2.ToLower().Where(c => c != ' '))
+        {
+            if (!dict.ContainsKey(c)) return false;
+            dict[c]--;
+            if (dict[c] < 0) return false;
+        }
+
+        return dict.Values.All(v => v == 0);
+    }
+
+    public static string[] EarthquakeDailySummary()
+    {
+        const string uri = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
+        using var client = new HttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        using var response = client.Send(request);
+        using var jsonStream = response.Content.ReadAsStream();
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var data = JsonSerializer.Deserialize<FeatureCollection>(jsonStream, options);
+
+        if (data?.Features == null) return Array.Empty<string>();
+
+        return data.Features
+            .Where(f => f.Properties?.Place != null)
+            .Select(f =>
+            {
+                string place = f.Properties.Place;
+                string mag = f.Properties.Mag.HasValue ? f.Properties.Mag.Value.ToString("0.##") : "N/A";
+                return $"{place} - Mag {mag}";
+            })
+            .ToArray();
+    }
+}
+
+// Earthquake JSON models
+public class FeatureCollection
+{
+    public List<Feature> Features { get; set; }
+}
+
+public class Feature
+{
+    public Properties Properties { get; set; }
+}
+
+public class Properties
+{
+    public string Place { get; set; }
+    public double? Mag { get; set; }
+}
+
+// Maze class
 public class Maze
 {
-    private readonly Dictionary<ValueTuple<int, int>, bool[]> _mazeMap;
+    private readonly Dictionary<(int, int), bool[]> _mazeMap;
     private int _currX = 1;
     private int _currY = 1;
 
-    public Maze(Dictionary<ValueTuple<int, int>, bool[]> mazeMap)
+    public Maze(Dictionary<(int, int), bool[]> mazeMap)
     {
         _mazeMap = mazeMap;
     }
 
-    // TODO Problem 4 - ADD YOUR CODE HERE
-    /// <summary>
-    /// Check to see if you can move left.  If you can, then move.  If you
-    /// can't move, throw an InvalidOperationException with the message "Can't go that way!".
-    /// </summary>
     public void MoveLeft()
     {
-        // FILL IN CODE
+        if (_mazeMap.TryGetValue((_currX, _currY), out var directions) && directions[0])
+            _currX--;
+        else
+            throw new InvalidOperationException("Can't go that way!");
     }
 
-    /// <summary>
-    /// Check to see if you can move right.  If you can, then move.  If you
-    /// can't move, throw an InvalidOperationException with the message "Can't go that way!".
-    /// </summary>
     public void MoveRight()
     {
-        // FILL IN CODE
+        if (_mazeMap.TryGetValue((_currX, _currY), out var directions) && directions[1])
+            _currX++;
+        else
+            throw new InvalidOperationException("Can't go that way!");
     }
 
-    /// <summary>
-    /// Check to see if you can move up.  If you can, then move.  If you
-    /// can't move, throw an InvalidOperationException with the message "Can't go that way!".
-    /// </summary>
     public void MoveUp()
     {
-        // FILL IN CODE
+        if (_mazeMap.TryGetValue((_currX, _currY), out var directions) && directions[2])
+            _currY--;
+        else
+            throw new InvalidOperationException("Can't go that way!");
     }
 
-    /// <summary>
-    /// Check to see if you can move down.  If you can, then move.  If you
-    /// can't move, throw an InvalidOperationException with the message "Can't go that way!".
-    /// </summary>
     public void MoveDown()
     {
-        // FILL IN CODE
+        if (_mazeMap.TryGetValue((_currX, _currY), out var directions) && directions[3])
+            _currY++;
+        else
+            throw new InvalidOperationException("Can't go that way!");
     }
 
     public string GetStatus()
